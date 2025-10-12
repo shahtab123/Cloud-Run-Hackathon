@@ -117,11 +117,13 @@ const SceneCreatorPage: React.FC = () => {
       if (!modalState.scene) return;
       setActiveAction({ type: 'subscene', id: modalState.scene.id });
       try {
-        const prompt = `Based on this main scene:\n\n"${modalState.scene.description}"\n\nAnd this instruction:\n\n"${systemPrompt}"\n\nCreate a few new scene descriptions from different perspectives or angles based on this idea: "${customPrompt}". Separate each description with '|||'.`;
+        const prompt = `Based on this main scene:\n\n"${modalState.scene.description}"\n\nAnd this instruction:\n\n"${systemPrompt}"\n\nCreate a single new scene description from a different perspective or angle based on this idea: "${customPrompt}". Do not add any extra formatting or separators.`;
         const client = getAiClient();
         const response = await client.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-        const subsceneDescriptions = response.text.split('|||').map(s => s.trim()).filter(Boolean);
-        if (projectId) addSubscenes(projectId, modalState.scene.id, subsceneDescriptions);
+        const subsceneDescription = response.text.trim();
+        if (projectId && subsceneDescription) {
+            addSubscenes(projectId, modalState.scene.id, [subsceneDescription]);
+        }
       } catch (error) {
         console.error("Error creating subscenes:", error);
         alert("Failed to create subscenes.");
