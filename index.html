@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Animation Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes gradient-animation {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient-animation 4s ease infinite;
+      }
+      @keyframes glow {
+        0%, 100% {
+          box-shadow: 0 0 5px theme('colors.red.500'), 0 0 10px theme('colors.red.500'), 0 0 15px theme('colors.red.400'), 0 0 20px theme('colors.red.400');
+        }
+        50% {
+          box-shadow: 0 0 10px theme('colors.red.600'), 0 0 20px theme('colors.red.600'), 0 0 30px theme('colors.red.500'), 0 0 40px theme('colors.red.500');
+        }
+      }
+      .hover-glow:hover {
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+      @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fade-in-up 0.6s ease-out forwards;
+        opacity: 0;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.4",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
