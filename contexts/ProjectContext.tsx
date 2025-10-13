@@ -15,11 +15,28 @@ export interface Scene {
   subscenes: Subscene[];
 }
 
+export interface GeneratedImage {
+  id: string;
+  data: string; // base64 image data url
+  prompt: string;
+  model: 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image';
+  sceneId?: string;
+}
+
+export interface Video {
+  id: string;
+  data: string; // base64 video data url
+  prompt: string;
+  sourceImage?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
   scenes: Scene[];
   systemPrompt?: string;
+  images: GeneratedImage[];
+  videos: Video[];
 }
 
 export const defaultSystemPrompt = `Create detailed 3D render prompts for a detective cold case documentary. Each prompt should follow this format:
@@ -37,6 +54,8 @@ interface ProjectContextType {
   addSubscenes: (projectId: string, sceneId: string, subsceneDescriptions: string[]) => void;
   updateScene: (projectId: string, sceneId: string, sceneUpdate: Partial<Scene>) => void;
   getScene: (projectId: string, sceneId: string | undefined) => Scene | undefined;
+  addImage: (projectId: string, image: Omit<GeneratedImage, 'id'>) => void;
+  addVideo: (projectId: string, video: Omit<Video, 'id'>) => void;
   setActiveProjectById: (projectId: string | null) => void;
 }
 
@@ -47,7 +66,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
   const createProject = (title: string): Project => {
-    const newProject: Project = { id: crypto.randomUUID(), title, scenes: [], systemPrompt: defaultSystemPrompt };
+    const newProject: Project = { id: crypto.randomUUID(), title, scenes: [], systemPrompt: defaultSystemPrompt, images: [], videos: [] };
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
     setActiveProject(newProject);
@@ -134,6 +153,34 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     setProjects(updatedProjects);
     setActiveProject(updatedProject);
   };
+
+  const addImage = (projectId: string, image: Omit<GeneratedImage, 'id'>) => {
+    const projectToUpdate = projects.find(p => p.id === projectId);
+    if (!projectToUpdate) return;
+
+    const newImage: GeneratedImage = { ...image, id: crypto.randomUUID() };
+    const updatedProject = { ...projectToUpdate, images: [...projectToUpdate.images, newImage] };
+    
+    const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
+    setProjects(updatedProjects);
+    if (activeProject?.id === updatedProject.id) {
+        setActiveProject(updatedProject);
+    }
+  };
+
+  const addVideo = (projectId: string, video: Omit<Video, 'id'>) => {
+    const projectToUpdate = projects.find(p => p.id === projectId);
+    if (!projectToUpdate) return;
+
+    const newVideo: Video = { ...video, id: crypto.randomUUID() };
+    const updatedProject = { ...projectToUpdate, videos: [...(projectToUpdate.videos || []), newVideo] };
+    
+    const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
+    setProjects(updatedProjects);
+    if (activeProject?.id === updatedProject.id) {
+        setActiveProject(updatedProject);
+    }
+  };
   
   const getScene = (projectId: string, sceneId: string | undefined): Scene | undefined => {
     if (!sceneId) return undefined;
@@ -151,6 +198,8 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     addSubscenes,
     updateScene,
     getScene,
+    addImage,
+    addVideo,
     setActiveProjectById,
   };
 

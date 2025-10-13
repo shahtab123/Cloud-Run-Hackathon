@@ -11,35 +11,46 @@ const DirectoryPage: React.FC = () => {
     const navigate = useNavigate();
     const [downloadingProjectId, setDownloadingProjectId] = useState<string | null>(null);
 
-    const handleDownloadProject = async (project: Project) => {
-        setDownloadingProjectId(project.id);
+    const handleDownloadContent = async (project: Project, type: 'scenes' | 'images' | 'videos') => {
+        setDownloadingProjectId(`${project.id}-${type}`);
         try {
             const zip = new JSZip();
-            const chatsFolder = zip.folder('scenes');
-            if (!chatsFolder) {
-                throw new Error("Could not create zip folder");
-            }
-
-            project.scenes.forEach((scene, sceneIndex) => {
-                const sceneFileName = `scene_${sceneIndex + 1}.txt`;
-                chatsFolder.file(sceneFileName, scene.description);
-
-                scene.subscenes.forEach((subscene, subsceneIndex) => {
-                    const subsceneFileName = `scene_${sceneIndex + 1}_subscene_${subsceneIndex + 1}.txt`;
-                    chatsFolder.file(subsceneFileName, subscene.description);
-                });
-            });
-
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(zipBlob);
             const projectTitleSafe = project.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            link.download = `${projectTitleSafe}_scenes.zip`;
             
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
+            if (type === 'scenes') {
+                const scenesFolder = zip.folder('scenes');
+                if (!scenesFolder) throw new Error("Could not create scenes folder");
+
+                project.scenes.forEach((scene, sceneIndex) => {
+                    scenesFolder.file(`scene_${sceneIndex + 1}.txt`, scene.description);
+                    scene.subscenes.forEach((sub, subIndex) => {
+                        scenesFolder.file(`scene_${sceneIndex + 1}_subscene_${subIndex + 1}.txt`, sub.description);
+                    });
+                });
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                downloadZip(zipBlob, `${projectTitleSafe}_scenes.zip`);
+            } else if (type === 'images') {
+                const imagesFolder = zip.folder('images');
+                if (!imagesFolder) throw new Error("Could not create images folder");
+
+                project.images.forEach((image, index) => {
+                    const base64Data = image.data.split(',')[1];
+                    imagesFolder.file(`image_${index + 1}.jpg`, base64Data, { base64: true });
+                });
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                downloadZip(zipBlob, `${projectTitleSafe}_images.zip`);
+            } else if (type === 'videos') {
+                 const videosFolder = zip.folder('videos');
+                if (!videosFolder) throw new Error("Could not create videos folder");
+                
+                (project.videos || []).forEach((video, index) => {
+                    const base64Data = video.data.split(',')[1];
+                    const videoType = video.data.match(/data:video\/(.+);/)?.[1] || 'mp4';
+                    videosFolder.file(`video_${index + 1}.${videoType}`, base64Data, { base64: true });
+                });
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                downloadZip(zipBlob, `${projectTitleSafe}_videos.zip`);
+            }
 
         } catch (error) {
             console.error("Failed to create zip file for download:", error);
@@ -47,6 +58,16 @@ const DirectoryPage: React.FC = () => {
         } finally {
             setDownloadingProjectId(null);
         }
+    };
+
+    const downloadZip = (blob: Blob, filename: string) => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
     };
 
 
@@ -69,18 +90,19 @@ const DirectoryPage: React.FC = () => {
                                 <button onClick={() => navigate(`/project/${project.id}`)} className="font-mono font-semibold text-gray-800 hover:underline">{project.title.replace(/\s+/g, '_')}/</button>
                             </div>
                             <div className="pl-6 border-l-2 border-gray-200 ml-2 space-y-2">
+                                {/* Scenes */}
                                 <div className="flex items-center justify-between pr-2">
                                     <div className="flex items-center">
                                         <FolderIcon className="w-5 h-5 mr-2 text-blue-500"/>
-                                        <span className="font-mono text-gray-600">chats/</span>
+                                        <span className="font-mono text-gray-600">scenes/</span>
                                     </div>
                                     <button
-                                        onClick={() => handleDownloadProject(project)}
+                                        onClick={() => handleDownloadContent(project, 'scenes')}
                                         disabled={!!downloadingProjectId}
                                         className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Download scenes as .txt files"
                                     >
-                                        {downloadingProjectId === project.id ? (
+                                        {downloadingProjectId === `${project.id}-scenes` ? (
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
                                         ) : (
                                             <DownloadIcon className="w-5 h-5" />
@@ -90,14 +112,60 @@ const DirectoryPage: React.FC = () => {
                                 <div className="pl-8 text-gray-500 font-mono text-sm">
                                     - {project.scenes.length} scene(s)
                                 </div>
-                                 <div className="flex items-center mt-2">
-                                    <FolderIcon className="w-5 h-5 mr-2 text-gray-400"/>
-                                    <span className="font-mono text-gray-400">images/</span>
+
+                                {/* Images */}
+                                <div className="flex items-center justify-between pr-2 mt-2">
+                                    <div className="flex items-center">
+                                        <FolderIcon className={`w-5 h-5 mr-2 ${project.images.length > 0 ? 'text-blue-500' : 'text-gray-400'}`}/>
+                                        <span className={`font-mono ${project.images.length > 0 ? 'text-gray-600' : 'text-gray-400'}`}>images/</span>
+                                    </div>
+                                    {project.images.length > 0 && (
+                                        <button
+                                            onClick={() => handleDownloadContent(project, 'images')}
+                                            disabled={!!downloadingProjectId}
+                                            className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Download all images"
+                                        >
+                                            {downloadingProjectId === `${project.id}-images` ? (
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                                            ) : (
+                                                <DownloadIcon className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
-                                <div className="flex items-center mt-2">
-                                    <FolderIcon className="w-5 h-5 mr-2 text-gray-400"/>
-                                    <span className="font-mono text-gray-400">videos/</span>
+                                {project.images.length > 0 &&
+                                    <div className="pl-8 text-gray-500 font-mono text-sm">
+                                        - {project.images.length} image(s)
+                                    </div>
+                                }
+
+                                {/* Videos */}
+                                <div className="flex items-center justify-between pr-2 mt-2">
+                                    <div className="flex items-center">
+                                        <FolderIcon className={`w-5 h-5 mr-2 ${(project.videos || []).length > 0 ? 'text-blue-500' : 'text-gray-400'}`}/>
+                                        <span className={`font-mono ${(project.videos || []).length > 0 ? 'text-gray-600' : 'text-gray-400'}`}>videos/</span>
+                                    </div>
+                                    {(project.videos || []).length > 0 && (
+                                        <button
+                                            onClick={() => handleDownloadContent(project, 'videos')}
+                                            disabled={!!downloadingProjectId}
+                                            className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Download all videos"
+                                        >
+                                            {downloadingProjectId === `${project.id}-videos` ? (
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                                            ) : (
+                                                <DownloadIcon className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
+                                {(project.videos || []).length > 0 &&
+                                    <div className="pl-8 text-gray-500 font-mono text-sm">
+                                        - {(project.videos || []).length} video(s)
+                                    </div>
+                                }
                             </div>
                         </div>
                     )) : <p className="font-mono text-gray-500">No projects found.</p>}

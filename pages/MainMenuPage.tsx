@@ -28,8 +28,8 @@ const MainMenuPage: React.FC = () => {
   
   const menuItems = [
     { title: 'Scene Creator', icon: BotIcon, path: `/project/${projectId}/scenes`, description: 'Write and plan your scenes.', disabled: false },
-    { title: 'Image Generation', icon: ImageIcon, path: '#', description: 'Generate images for each scene.', disabled: true },
-    { title: 'Video Assembly', icon: FilmIcon, path: '#', description: 'Combine images into a video.', disabled: true },
+    { title: 'Image Generation', icon: ImageIcon, path: `/project/${projectId}/image-generation`, description: 'Generate images for each scene.', disabled: false },
+    { title: 'Video Assembly', icon: FilmIcon, path: `/project/${projectId}/video-generation`, description: 'Combine images into a video.', disabled: false },
     { title: 'Voice Narration', icon: MicIcon, path: '#', description: 'Add AI-generated voiceovers.', disabled: true },
     { title: 'Final Edit', icon: ScissorsIcon, path: '#', description: 'Edit and finalize your video.', disabled: true },
     { title: 'Publish', icon: VideoIcon, path: '#', description: 'Export your masterpiece.', disabled: true },

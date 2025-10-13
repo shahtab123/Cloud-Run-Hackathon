@@ -7,6 +7,8 @@ import NewProjectPage from './pages/NewProjectPage';
 import MainMenuPage from './pages/MainMenuPage';
 import SceneCreatorPage from './pages/SceneCreatorPage';
 import DirectoryPage from './pages/DirectoryPage';
+import ImageGenerationPage from './pages/ImageGenerationPage';
+import VideoGenerationPage from './pages/VideoGenerationPage';
 
 const App: React.FC = () => {
   return (
@@ -18,6 +20,8 @@ const App: React.FC = () => {
             <Route path="/new-project" element={<NewProjectPage />} />
             <Route path="/project/:projectId" element={<MainMenuPage />} />
             <Route path="/project/:projectId/scenes" element={<SceneCreatorPage />} />
+            <Route path="/project/:projectId/image-generation" element={<ImageGenerationPage />} />
+            <Route path="/project/:projectId/video-generation" element={<VideoGenerationPage />} />
             <Route path="/directory" element={<DirectoryPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
