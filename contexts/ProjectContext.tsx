@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 
 // Types
@@ -37,41 +37,6 @@ export interface Narration {
   voice: string;
 }
 
-export interface TimelineClip {
-  id: string; // Unique ID for the clip instance on the timeline
-  assetId: string; // ID of the original asset (Video, Narration, etc.)
-  type: 'video' | 'image' | 'audio' | 'text';
-  name: string;
-  source: string; // data URL for media, or text content for text
-  track: string; // ID of the track this clip belongs to (e.g., 'video-1')
-  start: number; // start time on the timeline in seconds
-  duration: number; // duration on the timeline in seconds
-  originalDuration: number;
-  trimStart: number; // how much is trimmed from the start of the original asset
-  
-  // New properties for advanced editing
-  transform: {
-    x: number; // position percentage from center
-    y: number; // position percentage from center
-    scale: number; // 1 = 100%
-    rotation: number; // degrees
-  };
-  opacity: number; // 0 to 1
-  volume: number; // 0 to 1, for audio/video clips
-  fadeInDuration: number; // in seconds
-  fadeOutDuration: number; // in seconds
-  
-  // Text specific properties
-  text?: {
-      content: string;
-      fontFamily: string;
-      fontSize: number;
-      color: string;
-      align: 'left' | 'center' | 'right';
-  };
-}
-
-
 export interface Project {
   id:string;
   title: string;
@@ -80,7 +45,6 @@ export interface Project {
   images: GeneratedImage[];
   videos: Video[];
   narrations?: Narration[];
-  timeline?: TimelineClip[];
   
   // New Project-wide settings
   settings?: {
@@ -116,7 +80,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [projects, setProjects] = useLocalStorage<Project[]>('animation-projects', []);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
-  const createProject = (title: string): Project => {
+  const createProject = useCallback((title: string): Project => {
     const newProject: Project = { 
       id: crypto.randomUUID(), 
       title, 
@@ -125,7 +89,6 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       images: [], 
       videos: [], 
       narrations: [],
-      timeline: [],
       settings: {
         aspectRatio: '16:9',
         backgroundColor: '#000000',
@@ -135,9 +98,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     setProjects(updatedProjects);
     setActiveProject(newProject);
     return newProject;
-  };
+  }, [projects, setProjects]);
   
-  const setActiveProjectById = (projectId: string | null) => {
+  const setActiveProjectById = useCallback((projectId: string | null) => {
     if (projectId === null) {
       setActiveProject(null);
       return;
@@ -147,17 +110,17 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         ...project,
         settings: project.settings || { aspectRatio: '16:9', backgroundColor: '#000000' }
     } : null);
-  };
+  }, [projects]);
 
-  const updateProject = (updatedProject: Project) => {
+  const updateProject = useCallback((updatedProject: Project) => {
     const updatedProjects = projects.map(p => (p.id === updatedProject.id ? updatedProject : p));
     setProjects(updatedProjects);
     if (activeProject?.id === updatedProject.id) {
       setActiveProject(updatedProject);
     }
-  };
+  }, [projects, setProjects, activeProject?.id]);
 
-  const addScene = (projectId: string, sceneDescription: string) => {
+  const addScene = useCallback((projectId: string, sceneDescription: string) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
     
@@ -167,9 +130,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
     setProjects(updatedProjects);
     setActiveProject(updatedProject);
-  };
+  }, [projects, setProjects]);
 
-  const addScenes = (projectId: string, sceneDescriptions: string[]) => {
+  const addScenes = useCallback((projectId: string, sceneDescriptions: string[]) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
     
@@ -184,9 +147,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
     setProjects(updatedProjects);
     setActiveProject(updatedProject);
-  };
+  }, [projects, setProjects]);
 
-  const addSubscenes = (projectId: string, sceneId: string, subsceneDescriptions: string[]) => {
+  const addSubscenes = useCallback((projectId: string, sceneId: string, subsceneDescriptions: string[]) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
 
@@ -207,9 +170,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
     setProjects(updatedProjects);
     setActiveProject(updatedProject);
-  };
+  }, [projects, setProjects]);
   
-  const updateScene = (projectId: string, sceneId: string, sceneUpdate: Partial<Scene>) => {
+  const updateScene = useCallback((projectId: string, sceneId: string, sceneUpdate: Partial<Scene>) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
     
@@ -219,9 +182,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
     setProjects(updatedProjects);
     setActiveProject(updatedProject);
-  };
+  }, [projects, setProjects]);
 
-  const addImage = (projectId: string, image: Omit<GeneratedImage, 'id'>) => {
+  const addImage = useCallback((projectId: string, image: Omit<GeneratedImage, 'id'>) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
 
@@ -233,9 +196,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (activeProject?.id === updatedProject.id) {
         setActiveProject(updatedProject);
     }
-  };
+  }, [projects, setProjects, activeProject?.id]);
 
-  const addVideo = (projectId: string, video: Omit<Video, 'id'>) => {
+  const addVideo = useCallback((projectId: string, video: Omit<Video, 'id'>) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
 
@@ -247,9 +210,9 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (activeProject?.id === updatedProject.id) {
         setActiveProject(updatedProject);
     }
-  };
+  }, [projects, setProjects, activeProject?.id]);
 
-  const addNarration = (projectId: string, narration: Omit<Narration, 'id'>) => {
+  const addNarration = useCallback((projectId: string, narration: Omit<Narration, 'id'>) => {
     const projectToUpdate = projects.find(p => p.id === projectId);
     if (!projectToUpdate) return;
 
@@ -261,13 +224,13 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (activeProject?.id === updatedProject.id) {
         setActiveProject(updatedProject);
     }
-  };
+  }, [projects, setProjects, activeProject?.id]);
   
-  const getScene = (projectId: string, sceneId: string | undefined): Scene | undefined => {
+  const getScene = useCallback((projectId: string, sceneId: string | undefined): Scene | undefined => {
     if (!sceneId) return undefined;
     const project = projects.find(p => p.id === projectId);
     return project?.scenes.find(s => s.id === sceneId);
-  };
+  }, [projects]);
 
   const contextValue: ProjectContextType = {
     projects,

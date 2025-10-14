@@ -1,5 +1,5 @@
 {
-  "name": "ai-animation-studio",
+  "name": "easy-animation",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.4",
-    "@google/genai": "^1.24.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.24.1",
+    "@google/genai": "0.12.0",
     "jszip": "3.10.1"
   },
   "devDependencies": {
