@@ -30,13 +30,63 @@ export interface Video {
   sourceImage?: string;
 }
 
-export interface Project {
+export interface Narration {
   id: string;
+  data: string; // base64 data url for wav
+  script: string;
+  voice: string;
+}
+
+export interface TimelineClip {
+  id: string; // Unique ID for the clip instance on the timeline
+  assetId: string; // ID of the original asset (Video, Narration, etc.)
+  type: 'video' | 'image' | 'audio' | 'text';
+  name: string;
+  source: string; // data URL for media, or text content for text
+  track: string; // ID of the track this clip belongs to (e.g., 'video-1')
+  start: number; // start time on the timeline in seconds
+  duration: number; // duration on the timeline in seconds
+  originalDuration: number;
+  trimStart: number; // how much is trimmed from the start of the original asset
+  
+  // New properties for advanced editing
+  transform: {
+    x: number; // position percentage from center
+    y: number; // position percentage from center
+    scale: number; // 1 = 100%
+    rotation: number; // degrees
+  };
+  opacity: number; // 0 to 1
+  volume: number; // 0 to 1, for audio/video clips
+  fadeInDuration: number; // in seconds
+  fadeOutDuration: number; // in seconds
+  
+  // Text specific properties
+  text?: {
+      content: string;
+      fontFamily: string;
+      fontSize: number;
+      color: string;
+      align: 'left' | 'center' | 'right';
+  };
+}
+
+
+export interface Project {
+  id:string;
   title: string;
   scenes: Scene[];
   systemPrompt?: string;
   images: GeneratedImage[];
   videos: Video[];
+  narrations?: Narration[];
+  timeline?: TimelineClip[];
+  
+  // New Project-wide settings
+  settings?: {
+    aspectRatio: '16:9' | '9:16' | '1:1' | '4:3';
+    backgroundColor: string;
+  }
 }
 
 export const defaultSystemPrompt = `Create detailed 3D render prompts for a detective cold case documentary. Each prompt should follow this format:
@@ -56,6 +106,7 @@ interface ProjectContextType {
   getScene: (projectId: string, sceneId: string | undefined) => Scene | undefined;
   addImage: (projectId: string, image: Omit<GeneratedImage, 'id'>) => void;
   addVideo: (projectId: string, video: Omit<Video, 'id'>) => void;
+  addNarration: (projectId: string, narration: Omit<Narration, 'id'>) => void;
   setActiveProjectById: (projectId: string | null) => void;
 }
 
@@ -66,7 +117,20 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
   const createProject = (title: string): Project => {
-    const newProject: Project = { id: crypto.randomUUID(), title, scenes: [], systemPrompt: defaultSystemPrompt, images: [], videos: [] };
+    const newProject: Project = { 
+      id: crypto.randomUUID(), 
+      title, 
+      scenes: [], 
+      systemPrompt: defaultSystemPrompt, 
+      images: [], 
+      videos: [], 
+      narrations: [],
+      timeline: [],
+      settings: {
+        aspectRatio: '16:9',
+        backgroundColor: '#000000',
+      }
+    };
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
     setActiveProject(newProject);
@@ -79,7 +143,10 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       return;
     }
     const project = projects.find(p => p.id === projectId);
-    setActiveProject(project || null);
+    setActiveProject(project ? {
+        ...project,
+        settings: project.settings || { aspectRatio: '16:9', backgroundColor: '#000000' }
+    } : null);
   };
 
   const updateProject = (updatedProject: Project) => {
@@ -181,6 +248,20 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
         setActiveProject(updatedProject);
     }
   };
+
+  const addNarration = (projectId: string, narration: Omit<Narration, 'id'>) => {
+    const projectToUpdate = projects.find(p => p.id === projectId);
+    if (!projectToUpdate) return;
+
+    const newNarration: Narration = { ...narration, id: crypto.randomUUID() };
+    const updatedProject = { ...projectToUpdate, narrations: [...(projectToUpdate.narrations || []), newNarration] };
+    
+    const updatedProjects = projects.map(p => (p.id === projectId ? updatedProject : p));
+    setProjects(updatedProjects);
+    if (activeProject?.id === updatedProject.id) {
+        setActiveProject(updatedProject);
+    }
+  };
   
   const getScene = (projectId: string, sceneId: string | undefined): Scene | undefined => {
     if (!sceneId) return undefined;
@@ -200,6 +281,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     getScene,
     addImage,
     addVideo,
+    addNarration,
     setActiveProjectById,
   };
 

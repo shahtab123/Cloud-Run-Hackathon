@@ -11,7 +11,7 @@ const DirectoryPage: React.FC = () => {
     const navigate = useNavigate();
     const [downloadingProjectId, setDownloadingProjectId] = useState<string | null>(null);
 
-    const handleDownloadContent = async (project: Project, type: 'scenes' | 'images' | 'videos') => {
+    const handleDownloadContent = async (project: Project, type: 'scenes' | 'images' | 'videos' | 'narrations') => {
         setDownloadingProjectId(`${project.id}-${type}`);
         try {
             const zip = new JSZip();
@@ -50,7 +50,18 @@ const DirectoryPage: React.FC = () => {
                 });
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
                 downloadZip(zipBlob, `${projectTitleSafe}_videos.zip`);
-            }
+            } else if (type === 'narrations') {
+                const audioFolder = zip.folder('audio');
+               if (!audioFolder) throw new Error("Could not create audio folder");
+               
+               (project.narrations || []).forEach((narration, index) => {
+                   const base64Data = narration.data.split(',')[1];
+                   audioFolder.file(`narration_${index + 1}.wav`, base64Data, { base64: true });
+                   audioFolder.file(`narration_${index + 1}_script.txt`, narration.script);
+               });
+               const zipBlob = await zip.generateAsync({ type: 'blob' });
+               downloadZip(zipBlob, `${projectTitleSafe}_narrations.zip`);
+           }
 
         } catch (error) {
             console.error("Failed to create zip file for download:", error);
@@ -164,6 +175,33 @@ const DirectoryPage: React.FC = () => {
                                 {(project.videos || []).length > 0 &&
                                     <div className="pl-8 text-gray-500 font-mono text-sm">
                                         - {(project.videos || []).length} video(s)
+                                    </div>
+                                }
+
+                                 {/* Narrations */}
+                                <div className="flex items-center justify-between pr-2 mt-2">
+                                    <div className="flex items-center">
+                                        <FolderIcon className={`w-5 h-5 mr-2 ${(project.narrations || []).length > 0 ? 'text-blue-500' : 'text-gray-400'}`}/>
+                                        <span className={`font-mono ${(project.narrations || []).length > 0 ? 'text-gray-600' : 'text-gray-400'}`}>audio/</span>
+                                    </div>
+                                    {(project.narrations || []).length > 0 && (
+                                        <button
+                                            onClick={() => handleDownloadContent(project, 'narrations')}
+                                            disabled={!!downloadingProjectId}
+                                            className="p-1.5 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Download all audio narrations"
+                                        >
+                                            {downloadingProjectId === `${project.id}-narrations` ? (
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                                            ) : (
+                                                <DownloadIcon className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                                {(project.narrations || []).length > 0 &&
+                                    <div className="pl-8 text-gray-500 font-mono text-sm">
+                                        - {(project.narrations || []).length} narration(s)
                                     </div>
                                 }
                             </div>

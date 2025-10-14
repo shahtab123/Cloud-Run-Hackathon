@@ -30,8 +30,8 @@ const MainMenuPage: React.FC = () => {
     { title: 'Scene Creator', icon: BotIcon, path: `/project/${projectId}/scenes`, description: 'Write and plan your scenes.', disabled: false },
     { title: 'Image Generation', icon: ImageIcon, path: `/project/${projectId}/image-generation`, description: 'Generate images for each scene.', disabled: false },
     { title: 'Video Assembly', icon: FilmIcon, path: `/project/${projectId}/video-generation`, description: 'Combine images into a video.', disabled: false },
-    { title: 'Voice Narration', icon: MicIcon, path: '#', description: 'Add AI-generated voiceovers.', disabled: true },
-    { title: 'Final Edit', icon: ScissorsIcon, path: '#', description: 'Edit and finalize your video.', disabled: true },
+    { title: 'Voice Narration', icon: MicIcon, path: `/project/${projectId}/voice-narration`, description: 'Add AI-generated voiceovers.', disabled: false },
+    { title: 'Final Edit', icon: ScissorsIcon, path: `/project/${projectId}/editor`, description: 'Edit and finalize your video.', disabled: false },
     { title: 'Publish', icon: VideoIcon, path: '#', description: 'Export your masterpiece.', disabled: true },
     { title: 'Directory', icon: FolderIcon, path: '/directory', description: 'View all project files.', disabled: false },
   ];

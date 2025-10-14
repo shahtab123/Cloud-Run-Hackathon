@@ -9,6 +9,8 @@ import SceneCreatorPage from './pages/SceneCreatorPage';
 import DirectoryPage from './pages/DirectoryPage';
 import ImageGenerationPage from './pages/ImageGenerationPage';
 import VideoGenerationPage from './pages/VideoGenerationPage';
+import VoiceNarrationPage from './pages/VoiceNarrationPage';
+import VideoEditorPage from './pages/VideoEditorPage';
 
 const App: React.FC = () => {
   return (
@@ -22,6 +24,8 @@ const App: React.FC = () => {
             <Route path="/project/:projectId/scenes" element={<SceneCreatorPage />} />
             <Route path="/project/:projectId/image-generation" element={<ImageGenerationPage />} />
             <Route path="/project/:projectId/video-generation" element={<VideoGenerationPage />} />
+            <Route path="/project/:projectId/voice-narration" element={<VoiceNarrationPage />} />
+            <Route path="/project/:projectId/editor" element={<VideoEditorPage />} />
             <Route path="/directory" element={<DirectoryPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

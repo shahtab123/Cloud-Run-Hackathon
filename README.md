@@ -2,13 +2,26 @@
 
 A web application to create stunning animated YouTube videos with the power of AI, from scene planning to final video editing.
 
-## How It Works
+## Features
 
-1.  **Write your scene plan**: Use AI to generate a list of scenes for your story.
-2.  **Generate images**: Create visuals for each scene. (Coming Soon)
-3.  **Generate video from images**: Assemble images into video clips. (Coming Soon)
-4.  **Add AI-generated voice**: Narrate your story with AI voices. (Coming Soon)
-5.  **Edit video and publish**: Finalize and export your animation. (Coming Soon)
+-   **📝 AI-Powered Scene & Script Generation**: Kickstart your project by generating a complete scene plan. Refine scenes, create sub-scenes, and even generate narration scripts directly from your scene descriptions.
+
+-   **🎨 Advanced Image Generation**: Create stunning visuals for your scenes using text prompts with Google's Imagen model, or perform image-to-image edits with Gemini Nano Banana.
+
+-   **🎥 AI Video Assembly**: Bring your images to life by generating dynamic video clips from text prompts and source images using the Veo model.
+
+-   **🎤 AI Voice Narration**: Produce high-quality voiceovers for your scripts with a selection of professional AI voices and style prompts.
+
+-   **✂️ Professional Video Editor**: A full-featured timeline editor to bring all your assets together.
+    -   **Interactive Player**: Directly resize and reposition clips in the preview window.
+    -   **Inspector Panel**: Fine-tune transforms (position, scale, rotation), opacity, volume, and fades.
+    -   **Text Tool**: Add and customize text overlays.
+    -   **Toolbar**: Includes Selection and Razor tools for precise edits.
+    -   **Dynamic Tracks**: Add and remove video and audio tracks as needed.
+    -   **Timeline Controls**: Zoom, clip snapping, and full undo/redo support.
+    -   **Keyboard Shortcuts**: Work efficiently with common editing hotkeys.
+
+-   **📂 Project Management**: All your projects and assets are saved locally in your browser. A dedicated directory allows you to view and download your generated content (scenes, images, videos, audio) at any time.
 
 ## Technical Overview
 
@@ -21,7 +34,7 @@ This project is a modern, frontend-only web application built with:
 
 ### Data Persistence
 
-**Important:** All project data, including scenes and prompts, is stored exclusively in your browser's **Local Storage**.
+**Important:** All project data, including scenes, generated assets, and timeline edits, is stored exclusively in your browser's **Local Storage**.
 
 -   **Pros**: This allows the application to work offline and saves your progress instantly without needing to connect to a server.
 -   **Cons**: The data is tied to the browser and device you are using. Clearing your browser's data or using a private/incognito window will erase your projects.
