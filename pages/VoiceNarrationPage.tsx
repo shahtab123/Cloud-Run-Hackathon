@@ -28,6 +28,12 @@ const availableVoices = [
   { name: 'Fenrir', description: 'Male | Deep & Grave | US English' },
 ];
 
+const defaultGenerationPrompt = `You are a professional screenwriter. For each of the following scenes, write a voiceover narration script. Each script should be approximately {duration} seconds long.
+
+Format your output clearly, labeling each script with its corresponding scene number and subscene number if applicable (e.g., "Scene 1:", "Subscene 1.1:").
+
+The script should be ready for a voice actor to read directly.`;
+
 
 // --- Audio Utility Functions ---
 
@@ -109,8 +115,10 @@ const VoiceNarrationPage: React.FC = () => {
     const { activeProject, setActiveProjectById, addNarration } = useProject();
 
     const [source, setSource] = useState<'custom' | 'scene'>('custom');
-    const [selectedScene, setSelectedScene] = useState('');
+    const [selectedScenes, setSelectedScenes] = useState<string[]>([]);
+    const [generationPrompt, setGenerationPrompt] = useState(defaultGenerationPrompt);
     const [script, setScript] = useState('');
+    const [ttsScript, setTtsScript] = useState('');
     const [duration, setDuration] = useState(8);
     const [voice, setVoice] = useState('Kore');
     const [stylePrompt, setStylePrompt] = useState('clearly and calmly');
@@ -140,11 +148,21 @@ const VoiceNarrationPage: React.FC = () => {
         return options;
     }, [activeProject]);
 
+    const handleSceneSelectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { value, checked } = e.target;
+        setSelectedScenes(prev => {
+            if (checked) {
+                return [...prev, value];
+            } else {
+                return prev.filter(sceneValue => sceneValue !== value);
+            }
+        });
+    };
+
     const handleGenerateScriptFromScene = async () => {
-        const selectedOption = scenesOptions.find(opt => opt.value === selectedScene);
-        if (!selectedOption || !selectedOption.description) {
-            setScript('');
-            setError('Please select a valid scene.');
+        const selectedOptions = scenesOptions.filter(opt => selectedScenes.includes(opt.value));
+        if (selectedOptions.length === 0) {
+            setError('Please select at least one scene.');
             return;
         }
 
@@ -152,7 +170,10 @@ const VoiceNarrationPage: React.FC = () => {
         setError('');
         setScript('Generating script...');
         try {
-            const prompt = `Write a voiceover narration script for the following scene description, suitable for a duration of approximately ${duration} seconds. Output ONLY the script text, without any labels like "Voiceover:" or parenthetical descriptions of the tone or delivery. The script should be ready to be read directly by a voice actor. Scene:\n\n"${selectedOption.description}"`;
+            const sceneDescriptions = selectedOptions.map(opt => `${opt.label.trim()}:\n${opt.description}`).join('\n\n');
+            const finalGenerationPrompt = generationPrompt.replace('{duration}', duration.toString());
+            const prompt = `${finalGenerationPrompt}\n\nHere are the scenes:\n\n${sceneDescriptions}`;
+            
             const client = getAiClient();
             const response = await client.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
             setScript(response.text.trim());
@@ -173,7 +194,7 @@ const VoiceNarrationPage: React.FC = () => {
 
         try {
             const client = getAiClient();
-            const prompt = `Say it ${stylePrompt}: ${script}`;
+            const prompt = `Say it ${stylePrompt}: ${ttsScript}`;
 
             const response = await client.models.generateContent({
                 model: "gemini-2.5-flash-preview-tts",
@@ -208,7 +229,7 @@ const VoiceNarrationPage: React.FC = () => {
     const handleSaveNarration = async () => {
         if (!generatedAudio || !projectId) return;
         const dataUrl = await blobToBase64(generatedAudio.blob);
-        addNarration(projectId, { data: dataUrl, script, voice });
+        addNarration(projectId, { data: dataUrl, script: ttsScript, voice });
         setIsSaved(true);
     };
 
@@ -221,8 +242,6 @@ const VoiceNarrationPage: React.FC = () => {
         link.click();
         document.body.removeChild(link);
     };
-
-    const isGenerateDisabled = !script.trim() || isLoadingScript || isLoadingVoice;
 
     return (
         <div className="p-4 md:p-8 animate-fade-in-up">
@@ -244,18 +263,37 @@ const VoiceNarrationPage: React.FC = () => {
                         {source === 'scene' && (
                             <div className="space-y-3 animate-fade-in-up mb-4">
                                 <div>
-                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Select Scene</label>
-                                    <select
-                                        value={selectedScene}
-                                        onChange={(e) => setSelectedScene(e.target.value)}
-                                        disabled={isLoadingScript}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white appearance-none"
-                                    >
-                                        {scenesOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                    </select>
+                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Select Scenes</label>
+                                    <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-1 bg-white">
+                                        {scenesOptions.length > 1 ? scenesOptions.slice(1).map(opt => (
+                                            <div key={opt.value} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={opt.value}
+                                                    value={opt.value}
+                                                    checked={selectedScenes.includes(opt.value)}
+                                                    onChange={handleSceneSelectionChange}
+                                                    className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                                                />
+                                                <label htmlFor={opt.value} className="ml-2 block text-sm text-gray-900 cursor-pointer">
+                                                    {opt.label}
+                                                </label>
+                                            </div>
+                                        )) : <p className="text-sm text-gray-500 p-2">No scenes created yet.</p>}
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Desired Narration Length (sec)</label>
+                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Script Generation Prompt</label>
+                                    <Textarea
+                                        value={generationPrompt}
+                                        onChange={(e) => setGenerationPrompt(e.target.value)}
+                                        rows={6}
+                                        className="text-sm"
+                                        disabled={isLoadingScript}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Desired Length PER SCENE (sec)</label>
                                     <Input
                                         type="number"
                                         min="1"
@@ -272,7 +310,7 @@ const VoiceNarrationPage: React.FC = () => {
                                 </div>
                                 <Button
                                     onClick={handleGenerateScriptFromScene}
-                                    disabled={isLoadingScript || !selectedScene}
+                                    disabled={isLoadingScript || selectedScenes.length === 0}
                                     className="w-full !py-2"
                                     variant="secondary"
                                 >
@@ -280,7 +318,7 @@ const VoiceNarrationPage: React.FC = () => {
                                 </Button>
                             </div>
                         )}
-                        <Textarea value={script} onChange={e => setScript(e.target.value)} placeholder="Enter narration text here..." rows={8} disabled={isLoadingScript} />
+                        <Textarea value={script} onChange={e => setScript(e.target.value)} placeholder="Enter narration text here, or generate it from your scenes..." rows={8} disabled={isLoadingScript} />
                     </Card>
 
                      <Card className="p-6">
@@ -325,9 +363,18 @@ const VoiceNarrationPage: React.FC = () => {
                                 <span className="text-gray-500 font-mono">:</span>
                                </div>
                             </div>
+                            <div>
+                                <label className="font-semibold block mb-2">Text to Convert to Speech</label>
+                                <Textarea 
+                                    value={ttsScript} 
+                                    onChange={e => setTtsScript(e.target.value)} 
+                                    placeholder="Paste script here to generate audio." 
+                                    rows={6} 
+                                />
+                            </div>
                         </div>
                     </Card>
-                    <Button onClick={handleGenerateVoice} disabled={isGenerateDisabled} className="w-full hover-glow text-xl !py-4">
+                    <Button onClick={handleGenerateVoice} disabled={!ttsScript.trim() || isLoadingVoice} className="w-full hover-glow text-xl !py-4">
                         {isLoadingVoice ? 'Generating...' : 'Generate Voice'}
                     </Button>
                 </div>
