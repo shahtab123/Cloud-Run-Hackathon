@@ -48,7 +48,7 @@ const WelcomePage: React.FC = () => {
                     <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 mb-4 rounded-full bg-green-900/50 text-green-400 font-extrabold text-xl">
                       {step.number}
                     </div>
-                    <h3 className="text-md font-semibold text-gray-200">{step.text}</h3>
+                    <h3 className="text-md font-semibold text-gray-200 flex items-center justify-center min-h-[3.5rem]">{step.text}</h3>
                   </div>
                 </Card>
               ))}
@@ -59,7 +59,7 @@ const WelcomePage: React.FC = () => {
             className="animate-fade-in-up"
             style={{ animationDelay: '500ms' }}
           >
-            <Button onClick={() => navigate('/new-project')} className="hover-glow !bg-red-600 !text-white !hover:bg-red-700">
+            <Button onClick={() => navigate('/new-project')} className="hover-glow-green !bg-green-600 !text-white !hover:bg-green-700">
               Start Creating
             </Button>
           </div>

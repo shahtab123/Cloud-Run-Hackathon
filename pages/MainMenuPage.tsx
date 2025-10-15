@@ -29,15 +29,14 @@ const MainMenuPage: React.FC = () => {
   const menuItems = [
     { title: 'Scene Creator', icon: BotIcon, path: `/project/${projectId}/scenes`, description: 'Write and plan your scenes.', disabled: false, external: false },
     { title: 'Image Generation', icon: ImageIcon, path: `/project/${projectId}/image-generation`, description: 'Generate images for each scene.', disabled: false, external: false },
-    { title: 'Video Assembly', icon: FilmIcon, path: `/project/${projectId}/video-generation`, description: 'Combine images into a video.', disabled: false, external: false },
+    { title: 'Video Generation', icon: FilmIcon, path: `/project/${projectId}/video-generation`, description: 'Combine images into a video.', disabled: false, external: false },
     { title: 'Voice Narration', icon: MicIcon, path: `/project/${projectId}/voice-narration`, description: 'Add AI-generated voiceovers.', disabled: false, external: false },
-    { title: 'Free Video Editor', icon: ScissorsIcon, path: 'https://trykimu.com/', description: 'Use Kimu, a free & open-source tool to edit your videos.', disabled: false, external: true },
-    { title: 'Directory', icon: FolderIcon, path: '/directory', description: 'View all project files.', disabled: false, external: false },
+    { title: 'Free Video Editor', icon: ScissorsIcon, path: 'https://opencut.app/projects', description: 'Use OpenCut, a free & open-source tool to edit your videos.', disabled: false, external: true },
   ];
 
   return (
     <div className="animate-fade-in-up">
-      <h1 className="text-4xl font-bold mb-2 text-gray-100">Project: <span className="text-red-500">{activeProject.title}</span></h1>
+      <h1 className="text-4xl font-bold mb-2 text-gray-100">Project: <span className="text-green-500">{activeProject.title}</span></h1>
       <p className="text-lg text-gray-300 mb-10">Choose a step to work on.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -53,12 +52,12 @@ const MainMenuPage: React.FC = () => {
               }
             }}
             disabled={item.disabled}
-            className="p-6 !bg-gray-900/50 backdrop-blur-sm border border-red-500/20 !hover:border-red-400/80"
+            className="p-6 !bg-gray-900/50 backdrop-blur-sm border border-green-500/20 !hover:border-green-400/80"
             style={{ animationDelay: `${100 + index * 100}ms` }}
           >
             <div>
               <div className="flex items-center mb-4">
-                <item.icon className="w-8 h-8 mr-4 text-red-500" />
+                <item.icon className="w-8 h-8 mr-4 text-green-500" />
                 <h2 className="text-2xl font-bold text-gray-100">{item.title}</h2>
                 {item.external && (
                     <span className="ml-auto text-xs font-mono bg-gray-700 text-gray-200 px-2 py-0.5 rounded-full">EXTERNAL</span>
@@ -70,7 +69,7 @@ const MainMenuPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="mt-12 p-6 bg-gray-900/50 backdrop-blur-sm border border-red-500/20 rounded-2xl animate-fade-in-up" style={{ animationDelay: '800ms' }}>
+      <div className="mt-12 p-6 bg-gray-900/50 backdrop-blur-sm border border-green-500/20 rounded-2xl animate-fade-in-up" style={{ animationDelay: '800ms' }}>
         <div className="flex flex-col sm:flex-row items-center">
             <FolderIcon className="w-10 h-10 text-gray-400 mr-4 flex-shrink-0 mb-4 sm:mb-0" />
             <div className="flex-grow text-center sm:text-left">
@@ -79,7 +78,7 @@ const MainMenuPage: React.FC = () => {
                     All project data is stored locally in your browser. View and download all your generated assets in the directory.
                 </p>
             </div>
-            <Button variant="secondary" onClick={() => navigate('/directory')} className="ml-auto mt-4 sm:mt-0 flex-shrink-0 !bg-transparent border !border-red-500/50 !text-red-300 hover:!bg-red-500/20">
+            <Button variant="secondary" onClick={() => navigate('/directory')} className="ml-auto mt-4 sm:mt-0 flex-shrink-0 !bg-transparent border !border-green-500/50 !text-green-300 hover:!bg-green-500/20">
                 Open Directory
             </Button>
         </div>

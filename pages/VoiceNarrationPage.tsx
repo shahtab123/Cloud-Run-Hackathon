@@ -109,7 +109,9 @@ const VoiceNarrationPage: React.FC = () => {
     const { activeProject, setActiveProjectById, addNarration } = useProject();
 
     const [source, setSource] = useState<'custom' | 'scene'>('custom');
+    const [selectedScene, setSelectedScene] = useState('');
     const [script, setScript] = useState('');
+    const [duration, setDuration] = useState(8);
     const [voice, setVoice] = useState('Kore');
     const [stylePrompt, setStylePrompt] = useState('clearly and calmly');
     
@@ -138,11 +140,11 @@ const VoiceNarrationPage: React.FC = () => {
         return options;
     }, [activeProject]);
 
-    const handleSceneSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedValue = e.target.value;
-        const selectedOption = scenesOptions.find(opt => opt.value === selectedValue);
+    const handleGenerateScriptFromScene = async () => {
+        const selectedOption = scenesOptions.find(opt => opt.value === selectedScene);
         if (!selectedOption || !selectedOption.description) {
             setScript('');
+            setError('Please select a valid scene.');
             return;
         }
 
@@ -150,7 +152,7 @@ const VoiceNarrationPage: React.FC = () => {
         setError('');
         setScript('Generating script...');
         try {
-            const prompt = `Write a natural, expressive voiceover narration for this scene that matches its mood, visuals, and context. Scene:\n\n"${selectedOption.description}"`;
+            const prompt = `Write a voiceover narration script for the following scene description, suitable for a duration of approximately ${duration} seconds. Output ONLY the script text, without any labels like "Voiceover:" or parenthetical descriptions of the tone or delivery. The script should be ready to be read directly by a voice actor. Scene:\n\n"${selectedOption.description}"`;
             const client = getAiClient();
             const response = await client.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
             setScript(response.text.trim());
@@ -203,14 +205,14 @@ const VoiceNarrationPage: React.FC = () => {
         }
     };
     
-    const handleSaveVideo = async () => {
+    const handleSaveNarration = async () => {
         if (!generatedAudio || !projectId) return;
         const dataUrl = await blobToBase64(generatedAudio.blob);
         addNarration(projectId, { data: dataUrl, script, voice });
         setIsSaved(true);
     };
 
-    const handleDownloadVideo = () => {
+    const handleDownloadNarration = () => {
         if (!generatedAudio) return;
         const link = document.createElement('a');
         link.href = generatedAudio.url;
@@ -240,14 +242,45 @@ const VoiceNarrationPage: React.FC = () => {
                             <button onClick={() => setSource('scene')} className={`w-full p-2 rounded-md text-center font-semibold transition-all ${source === 'scene' ? 'bg-white shadow' : 'hover:bg-gray-200'}`}>From Scene</button>
                         </div>
                         {source === 'scene' && (
-                            <div className="relative">
-                                <select onChange={handleSceneSelect} disabled={isLoadingScript} className="w-full p-2 mb-3 border border-gray-300 rounded-md bg-white appearance-none">
-                                    {scenesOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                                </select>
-                                {isLoadingScript && <div className="absolute top-2.5 right-3 animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>}
+                            <div className="space-y-3 animate-fade-in-up mb-4">
+                                <div>
+                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Select Scene</label>
+                                    <select
+                                        value={selectedScene}
+                                        onChange={(e) => setSelectedScene(e.target.value)}
+                                        disabled={isLoadingScript}
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white appearance-none"
+                                    >
+                                        {scenesOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="font-semibold block mb-1 text-sm text-gray-600">Desired Narration Length (sec)</label>
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        max="180"
+                                        value={duration}
+                                        onChange={(e) => {
+                                            let val = parseInt(e.target.value, 10);
+                                            if (isNaN(val)) val = 1;
+                                            setDuration(Math.max(1, Math.min(180, val)));
+                                        }}
+                                        className="w-full"
+                                        placeholder="e.g., 8"
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleGenerateScriptFromScene}
+                                    disabled={isLoadingScript || !selectedScene}
+                                    className="w-full !py-2"
+                                    variant="secondary"
+                                >
+                                    {isLoadingScript ? 'Generating...' : <><SparklesIcon className="w-4 h-4 mr-2"/> Generate Script</>}
+                                </Button>
                             </div>
                         )}
-                        <Textarea value={script} onChange={e => setScript(e.target.value)} placeholder="Enter narration text here..." rows={8} />
+                        <Textarea value={script} onChange={e => setScript(e.target.value)} placeholder="Enter narration text here..." rows={8} disabled={isLoadingScript} />
                     </Card>
 
                      <Card className="p-6">
@@ -317,8 +350,8 @@ const VoiceNarrationPage: React.FC = () => {
                             </div>
                             <audio src={generatedAudio.url} controls className="w-full max-w-md mt-6" />
                             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-md">
-                                <Button onClick={handleDownloadVideo} variant="secondary" className="!text-base !font-semibold !py-2 !px-4"><DownloadIcon className="w-5 h-5 mr-2" />Download</Button>
-                                <Button onClick={handleSaveVideo} disabled={isSaved} variant="secondary" className="!text-base !font-semibold !py-2 !px-4">
+                                <Button onClick={handleDownloadNarration} variant="secondary" className="!text-base !font-semibold !py-2 !px-4"><DownloadIcon className="w-5 h-5 mr-2" />Download</Button>
+                                <Button onClick={handleSaveNarration} disabled={isSaved} variant="secondary" className="!text-base !font-semibold !py-2 !px-4">
                                     {isSaved ? <><CheckIcon className="w-5 h-5 mr-2 text-green-500" />Saved!</> : <><SaveIcon className="w-5 h-5 mr-2" />Save</>}
                                 </Button>
                                 <Button onClick={handleGenerateVoice} variant="secondary" className="!text-base !font-semibold !py-2 !px-4"><RedoIcon className="w-5 h-5 mr-2" />Regenerate</Button>
