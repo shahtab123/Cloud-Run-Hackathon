@@ -12,6 +12,7 @@ import { SaveIcon } from '../components/icons/SaveIcon';
 import { FilmIcon } from '../components/icons/FilmIcon';
 import { RedoIcon } from '../components/icons/RedoIcon';
 import { CheckIcon } from '../components/icons/CheckIcon';
+import { TrashIcon } from '../components/icons/TrashIcon';
 
 let ai: any = null;
 const getAiClient = () => {
@@ -105,9 +106,13 @@ const VideoGenerationPage: React.FC = () => {
         setLoadingMessage(loadingMessages[0]);
 
         try {
+            if (typeof (window as any).aistudio !== 'undefined' && !(await (window as any).aistudio.hasSelectedApiKey())) {
+                await (window as any).aistudio.openSelectKey();
+            }
+
             const client = getAiClient();
             const generationConfig = {
-                model: 'veo-2.0-generate-001',
+                model: 'veo-3.1-fast-generate-preview',
                 prompt,
                 config: { numberOfVideos: 1 },
                 ...(selectedImage && { image: { imageBytes: selectedImage.data, mimeType: selectedImage.type } })
@@ -124,7 +129,14 @@ const VideoGenerationPage: React.FC = () => {
             if (!downloadLink) throw new Error("Video generation failed to produce a valid link.");
 
             const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
-            if (!videoResponse.ok) throw new Error("Failed to download the generated video.");
+            if (!videoResponse.ok) {
+                const errorBody = await videoResponse.text();
+                console.error("Video download failed:", errorBody);
+                if (videoResponse.status === 404 || errorBody.includes("Requested entity was not found")) {
+                   throw new Error("Your API Key seems to be invalid or lacks permissions for the Veo model. Please select a valid API Key.");
+                }
+                throw new Error(`Failed to download the generated video. Status: ${videoResponse.status}`);
+           }
 
             const videoBlob = await videoResponse.blob();
             const videoDataUrl = await blobToBase64(videoBlob);
@@ -133,7 +145,11 @@ const VideoGenerationPage: React.FC = () => {
 
         } catch (err) {
             console.error("Error generating video:", err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred.");
+            let errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+            if (errorMessage.includes("Requested entity was not found")) {
+                errorMessage = "Your API Key seems to be invalid or lacks permissions for the Veo model. Please select a valid API Key.";
+           }
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -174,19 +190,46 @@ const VideoGenerationPage: React.FC = () => {
                 <div className="lg:col-span-1 space-y-6 sticky top-8">
                     <Card className="p-6">
                         <h2 className="text-xl font-bold mb-4">1. Source Image (Optional)</h2>
-                        {activeProject && activeProject.images.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-2">
-                                {activeProject.images.map(img => (
-                                    <img 
-                                        key={img.id}
-                                        src={img.data}
-                                        alt="Project image"
-                                        onClick={() => handleImageSelect(img.data)}
-                                        className={`w-full h-full object-cover rounded-md cursor-pointer border-4 transition-all ${selectedImage?.data === img.data.split(',')[1] ? 'border-red-500' : 'border-transparent hover:border-red-200'}`}
+                        
+                        {/* Preview for custom uploaded image */}
+                        {selectedImage && !activeProject?.images.some(img => img.data.split(',')[1] === selectedImage.data) && (
+                            <div className="mb-4 animate-fade-in">
+                                <p className="text-sm font-semibold text-gray-700 mb-2">Selected Custom Image:</p>
+                                <div 
+                                    className="border-4 border-red-500 rounded-md p-1 relative group cursor-pointer"
+                                    onClick={() => setSelectedImage(null)}
+                                >
+                                    <img
+                                        src={`data:${selectedImage.type};base64,${selectedImage.data}`}
+                                        alt="Custom uploaded image"
+                                        className="w-full h-auto object-cover rounded-sm"
                                     />
-                                ))}
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <TrashIcon className="w-8 h-8 text-white"/>
+                                    </div>
+                                </div>
                             </div>
-                        ) : <p className="text-sm text-gray-500">No images in this project yet.</p>}
+                        )}
+
+                        {activeProject && activeProject.images.length > 0 ? (
+                            <>
+                                <p className="text-sm font-semibold text-gray-700 mb-2">Select from Project Images:</p>
+                                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-2">
+                                    {activeProject.images.map(img => (
+                                        <img 
+                                            key={img.id}
+                                            src={img.data}
+                                            alt="Project image"
+                                            onClick={() => handleImageSelect(img.data)}
+                                            className={`w-full h-full object-cover rounded-md cursor-pointer border-4 transition-all ${selectedImage?.data === img.data.split(',')[1] ? 'border-red-500' : 'border-transparent hover:border-red-200'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            !(selectedImage && !activeProject?.images.some(img => img.data.split(',')[1] === selectedImage.data)) &&
+                            <p className="text-sm text-gray-500">No project images. You can upload one below.</p>
+                        )}
                          <label htmlFor="image-upload" className="mt-4 w-full p-3 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-600">
                             <UploadIcon className="w-5 h-5 mr-2"/>
                             Upload Custom Image
@@ -223,7 +266,16 @@ const VideoGenerationPage: React.FC = () => {
                             <p className="mt-6 text-lg font-semibold text-gray-700">{loadingMessage}</p>
                         </div>
                     )}
-                    {!isLoading && error && <p className="text-center text-red-500 p-8 font-semibold">{error}</p>}
+                    {!isLoading && error && (
+                        <div className="text-center p-8">
+                           <p className="text-red-500 font-semibold">{error}</p>
+                           {error.includes("API Key") && typeof (window as any).aistudio !== 'undefined' && (
+                                <Button variant="secondary" className="mt-4" onClick={() => (window as any).aistudio.openSelectKey()}>
+                                    Select API Key
+                                </Button>
+                           )}
+                        </div>
+                    )}
                     {!isLoading && !error && !generatedVideo && (
                         <div className="text-center text-gray-500">
                             <FilmIcon className="w-16 h-16 mx-auto mb-4" />

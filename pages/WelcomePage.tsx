@@ -25,7 +25,7 @@ const WelcomePage: React.FC = () => {
             style={{ animationDelay: '100ms' }}
           >
             <h1 className="text-5xl md:text-7xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-400 mb-4 pb-2">
-              <ShuffleText text="Easy Animation" />
+              <ShuffleText text="AI Animation Studio" />
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-12">
               Create stunning animated YouTube videos with AI.
